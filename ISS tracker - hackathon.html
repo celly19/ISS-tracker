@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+    <head>
+        <title> ISS Tracker - hackathon</title> 
+        <style>
+           body {
+ background-image:url("https://d2v9y0dukr6mq2.cloudfront.net/video/thumbnail/Hme4C4_7iosf3emf/space-stars-travel-blue-background-seamless-loop_hbku7s9w__F0000.png");
+               
+/*  Background Source:             https://d2v9y0dukr6mq2.cloudfront.net/video/thumbnail/Hme4C4_7iosf3emf/space-stars-travel-blue-background-seamless-loop_hbku7s9w__F0000.png*/
+               
+               background-color: black;
+               background-size:280%;
+               background-repeat: no-repeat;
+               
+}
+         #map {
+          height: 450px;
+          width: 90%;
+          padding: 30px;
+          margin: 0 auto;
+          border: 10px solid  ;
+          border-radius: 10px 
+        }
+
+        #container {
+          width: 50%;
+          margin: 0 auto;
+          text-align: center;
+            color:white;
+            }
+
+        h3 {
+          text-transform: uppercase;
+        }
+            table{
+            color:white;
+                position: relative;
+                left:40%;
+                padding: 40px 0;
+            }
+            
+            
+        </style>
+    </head>
+  
+  <body>
+        <div id="container">
+          <h3>Current location of the International Space Station</h3>
+          <h5>(Updates every 10 seconds)</h5>
+          <div id="map"></div>
+        </div>
+    
+      <table class="table-striped">
+            <tbody>
+              <tr>
+                <td><strong>Latitude:</strong></td>
+                <td id="latitude"></td>
+              </tr>
+              <tr>
+                <td><strong>Longitude:</strong></td>
+                <td id="longitude"></td>
+              </tr>
+              <tr>
+                <td><strong>Distance:</strong></td>
+                <td id="distance"></td>
+              </tr>
+              
+            </tbody>
+          </table>
+      
+<!-- API Source of Map: https://maps.googleapis.com/maps/api/js?key=AIzaSyBRamfMG3mZVAQ_dnzqj6adZxg5zn4Tfy4&callback=initMap   -->
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRamfMG3mZVAQ_dnzqj6adZxg5zn4Tfy4&callback=initMap">
+      </script>
+      
+<script>      
+        //Initialize google map and update every 10 seconds with new location
+function initMap() {
+        
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 3,
+          mapTypeId: "satellite"
+        });
+       
+        var marker = new google.maps.Marker({
+          map: map,
+          title: "ISS Location",
+          icon: {
+             url: "http://www.i2clipart.com/cliparts/9/1/8/b/clipart-international-space-station-918b.png",
+             scaledSize: {width: 32, height: 32},
+             anchor: {x: 64/4, y: 64/4}
+          }
+        });
+    
+        //Source of Marker: http://www.i2clipart.com/cliparts/9/1/8/b/clipart-international-space-station-918b.png
+    
+        updateMap(map, marker)
+        setInterval( () => {
+          updateMap(map, marker)
+        }, 10000)
+        
+        // Get current location. Returns a promise
+        function updateMap(map, marker) {
+          getISSLocation()
+            .then( (location) => {
+               map.setCenter(location)
+               marker.setPosition(location)
+          })
+    }
+}
+
+
+
+// Get location of International space station
+function getISSLocation() {
+  
+  return new Promise( (resolve, reject) => {
+    let XHR = new XMLHttpRequest();
+    
+    XHR.open('GET', "http://api.open-notify.org/iss-now.json");
+    XHR.onload = function () {
+      let location = {}
+      if(XHR.readyState === 4 && XHR.status === 200) {
+
+        let latitude  = JSON.parse(XHR.responseText).iss_position.latitude;
+        let longitude = JSON.parse(XHR.responseText).iss_position.longitude;
+          
+        var lat = document.getElementById("latitude");
+        lat.innerHTML=latitude;
+          
+        var long = document.getElementById("longitude");
+        long.innerHTML=longitude;
+          
+                  
+        var dis = document.getElementById("distance");
+
+        
+          getLocation();
+          
+                function getLocation() {
+                  if (navigator.geolocation) {
+
+                    navigator.geolocation.getCurrentPosition(showPosition);
+
+                  } else {
+                    dis.innerHTML = "Geolocation is not supported by this browser.";
+                  }
+                }
+          
+            function showPosition(position) {
+                var lat2=position.coords.latitude;
+                var long2=position.coords.longitude;
+                dis.innerHTML=getDistance(latitude, longitude, lat2, long2);
+        }
+          
+          
+          function getDistance(lat1, lon1, lat2, lon2) {
+                var earthRadius = 3959; //miles
+                var latRadians = getRadians(lat2 - lat1);
+                var lonRadians = getRadians(lon2 - lon1);
+                var a = Math.sin(latRadians / 2) * Math.sin(latRadians / 2) 
+                        Math.cos(getRadians(lat1)) * Math.cos(getRadians(lat2)) *
+                        Math.sin(lonRadians / 2) * Math.sin(lonRadians / 2);
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                var distance = earthRadius * c;
+                return distance;
+            }
+
+            function getRadians(latlongDistance) {
+                return latlongDistance * Math.PI / 180;
+            }
+          
+           
+    //http://www.movable-type.co.uk/scripts/latlong.html
+    //https://www.w3schools.com/html/tryit.asp?filename=tryhtml5_geolocation
+    //https://james-priest.github.io/100-days-of-code-log-r2/CH14-Geolocation.html
+    //https://codepen.io/axeboi/pen/XVpQWQ
+          
+        
+        location = {
+          lat: Number(latitude),
+          lng: Number(longitude)
+        }
+        resolve(location)
+      } else {
+        reject(XHR.statusText)
+      }
+    }
+    XHR.send()
+  })
+}
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      </script>
+   
+    
+
+
+  </body>
+      
+</html>
+
+
